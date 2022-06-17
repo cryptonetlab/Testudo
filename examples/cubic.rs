@@ -9,6 +9,7 @@
 //!
 //! [here]: https://medium.com/@VitalikButerin/quadratic-arithmetic-programs-from-zero-to-hero-f6d558cea649
 use ark_std::{One, UniformRand, Zero};
+use ark_bls12_377::Fr as Scalar;
 use libspartan::{InputsAssignment, Instance, SNARKGens, VarsAssignment, SNARK};
 use merlin::Transcript;
 

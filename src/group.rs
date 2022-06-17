@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use num_bigint::BigInt;
 use crate::errors::ProofVerifyError;
 
+use lazy_static::lazy_static;
 use super::scalar::{Scalar};
 use core::borrow::Borrow;
 use core::ops::{Mul, MulAssign};

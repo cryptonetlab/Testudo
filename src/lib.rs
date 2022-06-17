@@ -9,7 +9,6 @@ extern crate core;
 extern crate digest;
 extern crate lazy_static;
 extern crate merlin;
-extern crate rand;
 extern crate sha3;
 extern crate test;
 
