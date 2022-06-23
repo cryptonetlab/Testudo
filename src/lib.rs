@@ -6,7 +6,6 @@
 
 extern crate byteorder;
 extern crate core;
-extern crate curve25519_dalek;
 extern crate digest;
 extern crate merlin;
 extern crate sha3;
@@ -35,7 +34,8 @@ mod timer;
 mod transcript;
 mod unipoly;
 
-use core::cmp::max;
+use core::{cmp::max};
+use std::borrow::Borrow;
 use errors::{ProofVerifyError, R1CSError};
 use merlin::Transcript;
 use r1csinstance::{
@@ -45,8 +45,8 @@ use r1csproof::{R1CSGens, R1CSProof};
 use random::RandomTape;
 use scalar::Scalar;
 use ark_serialize::*;
-use ark_ff::{PrimeField, BigInteger};
-use ark_std::{One, Zero};
+use ark_ff::{PrimeField, Field, BigInteger};
+use ark_std::{One, Zero, UniformRand};
 use timer::Timer;
 use transcript::{AppendToTranscript, ProofTranscript};
 
@@ -72,12 +72,12 @@ impl Assignment {
     let bytes_to_scalar = |vec: &Vec<Vec<u8>>| -> Result<Vec<Scalar>, R1CSError> {
       let mut vec_scalar: Vec<Scalar> = Vec::new();
       for v in vec {
-        let val = Scalar::from_le_bytes_mod_order(v);
-        // if val.is_some().unwrap_u8() == 1 {
-          vec_scalar.push(val);
-        // } else {
-        //   return Err(R1CSError::InvalidScalar);
-        // }
+        let val = Scalar::from_random_bytes(v.as_slice());
+        if val.is_some() == true {
+          vec_scalar.push(val.unwrap());
+        } else {
+          return Err(R1CSError::InvalidScalar);
+        }
       }
       Ok(vec_scalar)
     };
@@ -118,6 +118,7 @@ pub type VarsAssignment = Assignment;
 pub type InputsAssignment = Assignment;
 
 /// `Instance` holds the description of R1CS matrices
+#[derive(Debug)]
 pub struct Instance {
   inst: R1CSInstance,
 }
@@ -165,31 +166,31 @@ impl Instance {
     };
 
     let bytes_to_scalar =
-      |tups: &[(usize, usize, Vec<u8>)]| -> Result<Vec<(usize, usize, Scalar)>, R1CSError> {
+      |tups: & [(usize, usize, Vec<u8>)]| -> Result<Vec<(usize, usize, Scalar)>, R1CSError> {
         let mut mat: Vec<(usize, usize, Scalar)> = Vec::new();
-        for &(row, col, val_bytes) in tups {
+        for (row, col, val_bytes) in tups {
           // row must be smaller than num_cons
-          if row >= num_cons {
+          if *row >= num_cons {
             return Err(R1CSError::InvalidIndex);
           }
 
           // col must be smaller than num_vars + 1 + num_inputs
-          if col >= num_vars + 1 + num_inputs {
+          if *col >= num_vars + 1 + num_inputs {
             return Err(R1CSError::InvalidIndex);
           }
 
-          let val = Scalar::from_le_bytes_mod_order(&val_bytes);
-          // if val.is_some() == true {
+          let val = Scalar::from_random_bytes(&val_bytes.as_slice());
+          if val.is_some() == true {
             // if col >= num_vars, it means that it is referencing a 1 or input in the satisfying
             // assignment
-            if col >= num_vars {
-              mat.push((row, col + num_vars_padded - num_vars, val));
+            if *col >= num_vars {
+              mat.push((*row, *col + num_vars_padded - num_vars, val.unwrap()));
             } else {
-              mat.push((row, col, val));
+              mat.push((*row, *col, val.unwrap()));
             }
-          // } else {
-          //   return Err(R1CSError::InvalidScalar);
-          // }
+          } else {
+            return Err(R1CSError::InvalidScalar);
+          }
         }
 
         // pad with additional constraints up until num_cons_padded if the original constraints were 0 or 1
@@ -379,7 +380,7 @@ impl SNARK {
         )
       };
 
-      let proof_encoded: Vec<u8> = Vec::new();
+      let mut proof_encoded: Vec<u8> = Vec::new();
       proof.serialize(&mut proof_encoded).unwrap();
       Timer::print(&format!("len_r1cs_sat_proof {:?}", proof_encoded.len()));
 
@@ -409,7 +410,7 @@ impl SNARK {
         &mut random_tape,
       );
 
-      let proof_encoded: Vec<u8> = Vec::new();
+      let mut proof_encoded: Vec<u8> = Vec::new();
       proof.serialize(&mut proof_encoded).unwrap();
       Timer::print(&format!("len_r1cs_eval_proof {:?}", proof_encoded.len()));
       proof
@@ -537,8 +538,8 @@ impl NIZK {
         transcript,
         &mut random_tape,
       );
-      let proof_encoded: Vec<u8> = Vec::new();
-      proof.serialize(proof_encoded).unwrap();
+      let mut proof_encoded = Vec::new();
+      proof.serialize(&mut proof_encoded).unwrap();
       Timer::print(&format!("len_r1cs_sat_proof {:?}", proof_encoded.len()));
       (proof, rx, ry)
     };
@@ -641,10 +642,9 @@ mod tests {
       0,
     ];
 
-    let zero_vec = zero.to_vec();
-    let A = vec![(0, 0, zero_vec)];
-    let B = vec![(100, 1, zero_vec)];
-    let C = vec![(1, 1, zero_vec)];
+    let A = vec![(0, 0, zero.to_vec())];
+    let B = vec![(100, 1, zero.to_vec())];
+    let C = vec![(1, 1, zero.to_vec())];
 
     let inst = Instance::new(num_cons, num_vars, num_inputs, &A, &B, &C);
     assert!(inst.is_err());

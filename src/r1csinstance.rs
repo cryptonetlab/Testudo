@@ -28,7 +28,7 @@ pub struct R1CSInstance {
 impl AppendToTranscript for R1CSInstance {
   fn append_to_transcript(&self, _label: &'static [u8], transcript: &mut Transcript) {
     let mut bytes = Vec::new();
-    self.serialize(&mut bytes);
+    self.serialize(&mut bytes).unwrap();
     transcript.append_message(b"R1CSInstance", &bytes);
   }
 }

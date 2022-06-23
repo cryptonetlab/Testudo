@@ -2,10 +2,11 @@
 use super::commitments::{Commitments, MultiCommitGens};
 use super::errors::ProofVerifyError;
 use super::group::{
-  CompressedGroup, CompressGroupElement, UnpackGroupElement, GroupElement, DecompressGroupElement};
+  CompressedGroup, CompressGroupElement, UnpackGroupElement, GroupElement, DecompressGroupElement, GroupElementAffine};
 use super::random::RandomTape;
 use super::scalar::Scalar;
 use super::transcript::{AppendToTranscript, ProofTranscript};
+use ark_ec::group::Group;
 use merlin::Transcript;
 use ark_serialize::*;
 use ark_ec::ProjectiveCurve;
@@ -140,9 +141,10 @@ impl EqualityProof {
       let C = C1.unpack()? - C2.unpack()?;
       (C.mul(c.into_repr()) + self.alpha.unpack()?).compress()
     };
+    println!("rhs {:?}", rhs);
 
     let lhs = gens_n.h.mul(self.z.into_repr()).compress();
-
+    println!("lhs {:?}", lhs);
     if lhs == rhs {
       Ok(())
     } else {
@@ -195,8 +197,16 @@ impl ProductProof {
     let b4 = random_tape.random_scalar(b"b4");
     let b5 = random_tape.random_scalar(b"b5");
 
-    let X = x.commit(rX, gens_n).compress();
+    let X_unc =  x.commit(rX, gens_n);
+    
+    
+    let X = X_unc.compress();
     X.append_to_transcript(b"X", transcript);
+
+    let X_new = GroupElement::decompress(&X);
+
+    assert_eq!(X_unc, X_new.unwrap());
+   
 
     let Y = y.commit(rY, gens_n).compress();
     Y.append_to_transcript(b"Y", transcript);
@@ -252,6 +262,7 @@ impl ProductProof {
     z1: &Scalar,
     z2: &Scalar,
   ) -> bool {
+    println!("{:?}", X);
     let lhs = (GroupElement::decompress(P).unwrap() + GroupElement::decompress(X).unwrap().mul(c.into_repr())).compress();
     let rhs = z1.commit(z2, gens_n).compress();
 
@@ -420,7 +431,6 @@ impl DotProductProof {
 
     let dotproduct_z_a = DotProductProof::compute_dotproduct(&self.z, a);
     result &= Cy.unpack()?.mul(c.into_repr()) + self.beta.unpack()? == dotproduct_z_a.commit(&self.z_beta, gens_1);
-
     if result {
       Ok(())
     } else {
@@ -598,7 +608,13 @@ impl DotProductProofLog {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+  use std::marker::PhantomData;
+
+use crate::group::VartimeMultiscalarMul;
+
+use super::*;
+use ark_bls12_377::{G1Affine, Fq, FqParameters};
+use ark_ff::{Fp384, BigInteger384};
 use ark_std::{UniformRand};
   #[test]
   fn check_knowledgeproof() {
@@ -647,10 +663,14 @@ use ark_std::{UniformRand};
       .verify(&gens_1, &mut verifier_transcript, &C1, &C2)
       .is_ok());
   }
-
+  
   #[test]
   fn check_productproof() {
   let mut rng = ark_std::rand::thread_rng();
+  let pt = GroupElement::rand(&mut rng);
+  let pt_c = pt.compress();
+  let pt2 = GroupElement::decompress(&pt_c).unwrap();
+  assert_eq!(pt, pt2);
 
     let gens_1 = MultiCommitGens::new(1, b"test-productproof");
     let x = Scalar::rand(&mut rng);

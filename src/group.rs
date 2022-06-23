@@ -3,7 +3,7 @@ use ark_ec::group::Group;
 use ark_ec::{
   msm::VariableBaseMSM,
 };
-use ark_ff::{PrimeField, Fp256};
+use ark_ff::{PrimeField, Fp256, Zero};
 use digest::DynDigest;
 use lazy_static::lazy_static;
 use num_bigint::BigInt;
@@ -18,8 +18,8 @@ use ark_serialize::*;
 pub type GroupElement = ark_bls12_377::G1Projective;
 pub type GroupElementAffine = ark_bls12_377::G1Affine;
 
-#[derive(Clone, Eq, Copy, PartialEq, Hash, Debug, CanonicalSerialize, CanonicalDeserialize)]
-pub struct CompressedGroup(pub [u8; 48]);
+#[derive(Clone, Eq, PartialEq, Hash, Debug,  CanonicalSerialize, CanonicalDeserialize)]
+pub struct CompressedGroup(pub Vec<u8>);
 
 lazy_static! {
   pub static ref GROUP_BASEPOINT: GroupElement = GroupElement::prime_subgroup_generator();
@@ -39,19 +39,20 @@ pub trait UnpackGroupElement {
 
 impl CompressGroupElement for GroupElement {
   fn compress(&self) -> CompressedGroup {
-    let mut point_encoding = [0u8; 48];
-    self.serialize(&mut point_encoding[..]);
+    let mut point_encoding = Vec::new();
+    self.serialize(&mut point_encoding).unwrap();
+    // println!("in compress {:?}", point_encoding);;
     CompressedGroup(point_encoding)
   }
 }
 
 impl DecompressGroupElement for GroupElement {
   fn decompress(encoded: &CompressedGroup) -> Option<Self>
-  {
-      let mut encoded_bytes = encoded.0;
-      // TODO: make this cleaner
-      let res = GroupElement::deserialize(&encoded_bytes[..]);
+  { 
+
+      let res = GroupElement::deserialize(&*encoded.0);
       if res.is_err() {
+         println!("{:?}", res);
         None
       } else {
         Some(res.unwrap())
@@ -61,7 +62,8 @@ impl DecompressGroupElement for GroupElement {
 
 impl UnpackGroupElement for CompressedGroup {
   fn unpack(&self) -> Result<GroupElement, ProofVerifyError> {
-      GroupElement::decompress(&self).ok_or_else(|| ProofVerifyError::DecompressionError(self.0))
+    let encoded = self.0.clone();
+      GroupElement::decompress(self).ok_or_else(|| ProofVerifyError::DecompressionError(encoded))
   }
 }
 
@@ -76,7 +78,7 @@ impl VartimeMultiscalarMul for GroupElement {
 ) -> GroupElement{
   let repr_scalars= scalars.into_iter().map(|S| S.borrow().into_repr()).collect::<Vec<<Scalar as PrimeField>::BigInt>>();
   let aff_points = points.into_iter().map(|P| P.borrow().into_affine()).collect::<Vec<GroupElementAffine>>();
-  VariableBaseMSM::multi_scalar_mul(aff_points.as_slice(), repr_scalars.as_slice())
+   VariableBaseMSM::multi_scalar_mul(aff_points.as_slice(), repr_scalars.as_slice())
 }
 }
 
