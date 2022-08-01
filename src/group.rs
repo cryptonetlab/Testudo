@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use num_bigint::BigInt;
 
 use super::scalar::Scalar;
+
 use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_serialize::*;
 use core::borrow::Borrow;
