@@ -23,7 +23,7 @@ ark-ec = { version = "^0.4.0", default-features = false }
 ark-std = { version = "^0.4.0"}
 ark-bls12-377 = { version = "^0.4.0", features = ["r1cs","curve"] }
 ark-bls12-381 = { version = "^0.4.0", features = ["curve"] }
-ark-blst = { git = "https://github.com/nikkolasg/ark-blst" , branch = "feat/absorb" }
+ark-blst = { git = "https://github.com/nikkolasg/ark-blst"  }
 ark-serialize = { version = "^0.4.0", features = ["derive"] }
 ark-crypto-primitives = {version = "^0.4.0", features = ["sponge","r1cs","snark"] }
 ark-r1cs-std = { version = "^0.4.0", default-features = false }
@@ -56,12 +56,8 @@ name = "libspartan"
 path = "src/lib.rs"
 
 [[bin]]
-name = "snark"
-path = "profiler/snark.rs"
-
-[[bin]]
-name = "nizk"
-path = "profiler/nizk.rs"
+name = "testudo"
+path = "profiler/testudo.rs"
 
 [[bench]]
 name = "testudo"

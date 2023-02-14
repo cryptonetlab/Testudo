@@ -57,16 +57,31 @@ impl<E: Pairing> TestudoGens<E> {
       num_vars_padded
     };
 
+    let num_cons_padded = {
+      let mut num_cons_padded = num_cons;
+
+      // ensure that num_cons_padded is at least 2
+      if num_cons_padded == 0 || num_cons_padded == 1 {
+        num_cons_padded = 2;
+      }
+
+      // ensure that num_cons_padded is power of 2
+      if num_cons.next_power_of_two() != num_cons {
+        num_cons_padded = num_cons.next_power_of_two();
+      }
+      num_cons_padded
+    };
+
     let gens_r1cs_sat = R1CSGens::new(
       b"gens_r1cs_sat",
-      num_cons,
+      num_cons_padded,
       num_vars_padded,
       num_inputs,
       poseidon,
     );
     let gens_r1cs_eval = R1CSCommitmentGens::new(
       b"gens_r1cs_eval",
-      num_cons,
+      num_cons_padded,
       num_vars_padded,
       num_inputs,
       num_nz_entries,
@@ -265,85 +280,84 @@ mod tests {
       .is_ok());
   }
 
-  //   #[test]
-  //   fn test_padded_constraints() {
-  //     type F = ark_bls12_377::Fr;
-  //     type E = ark_bls12_377::Bls12_377;
-  //     // parameters of the R1CS instance
-  //     let num_cons = 1;
-  //     let num_vars = 1;
-  //     let num_inputs = 3;
-  //     let num_non_zero_entries = 3;
+  #[test]
+  fn test_padded_constraints() {
+    type F = ark_bls12_377::Fr;
+    type E = ark_bls12_377::Bls12_377;
+    // parameters of the R1CS instance
+    let num_cons = 1;
+    let num_vars = 0;
+    let num_inputs = 3;
+    let num_non_zero_entries = 3;
 
-  //     // We will encode the above constraints into three matrices, where
-  //     // the coefficients in the matrix are in the little-endian byte order
-  //     let mut A: Vec<(usize, usize, Vec<u8>)> = Vec::new();
-  //     let mut B: Vec<(usize, usize, Vec<u8>)> = Vec::new();
-  //     let mut C: Vec<(usize, usize, Vec<u8>)> = Vec::new();
+    // We will encode the above constraints into three matrices, where
+    // the coefficients in the matrix are in the little-endian byte order
+    let mut A: Vec<(usize, usize, Vec<u8>)> = Vec::new();
+    let mut B: Vec<(usize, usize, Vec<u8>)> = Vec::new();
+    let mut C: Vec<(usize, usize, Vec<u8>)> = Vec::new();
 
-  //     // Create a^2 + b + 13
-  //     A.push((0, num_vars + 2, (F::one().into_bigint().to_bytes_le()))); // 1*a
-  //     B.push((0, num_vars + 2, F::one().into_bigint().to_bytes_le())); // 1*a
-  //     C.push((0, num_vars + 1, F::one().into_bigint().to_bytes_le())); // 1*z
-  //     C.push((0, num_vars, (-F::from(13u64)).into_bigint().to_bytes_le())); // -13*1
-  //     C.push((0, num_vars + 3, (-F::one()).into_bigint().to_bytes_le())); // -1*b
+    // Create a^2 + b + 13
+    A.push((0, num_vars + 2, (F::one().into_bigint().to_bytes_le()))); // 1*a
+    B.push((0, num_vars + 2, F::one().into_bigint().to_bytes_le())); // 1*a
+    C.push((0, num_vars + 1, F::one().into_bigint().to_bytes_le())); // 1*z
+    C.push((0, num_vars, (-F::from(13u64)).into_bigint().to_bytes_le())); // -13*1
+    C.push((0, num_vars + 3, (-F::one()).into_bigint().to_bytes_le())); // -1*b
 
-  //     // Var Assignments (Z_0 = 16 is the only output)
-  //     let vars = vec![F::zero().into_bigint().to_bytes_le(); num_vars];
+    // Var Assignments (Z_0 = 16 is the only output)
+    let vars = vec![F::zero().into_bigint().to_bytes_le(); num_vars];
 
-  //     // create an InputsAssignment (a = 1, b = 2)
-  //     let mut inputs = vec![F::zero().into_bigint().to_bytes_le(); num_inputs];
-  //     inputs[0] = F::from(16u64).into_bigint().to_bytes_le();
-  //     inputs[1] = F::from(1u64).into_bigint().to_bytes_le();
-  //     inputs[2] = F::from(2u64).into_bigint().to_bytes_le();
+    // create an InputsAssignment (a = 1, b = 2)
+    let mut inputs = vec![F::zero().into_bigint().to_bytes_le(); num_inputs];
+    inputs[0] = F::from(16u64).into_bigint().to_bytes_le();
+    inputs[1] = F::from(1u64).into_bigint().to_bytes_le();
+    inputs[2] = F::from(2u64).into_bigint().to_bytes_le();
 
-  //     let assignment_inputs = InputsAssignment::<F>::new(&inputs).unwrap();
-  //     let assignment_vars = VarsAssignment::new(&vars).unwrap();
+    let assignment_inputs = InputsAssignment::<F>::new(&inputs).unwrap();
+    let assignment_vars = VarsAssignment::new(&vars).unwrap();
 
-  //     // Check if instance is satisfiable
-  //     let inst = Instance::new(num_cons, num_vars, num_inputs, &A, &B, &C).unwrap();
-  //     let res = inst.is_sat(&assignment_vars, &assignment_inputs);
-  //     assert!(res.unwrap(), "should be satisfied");
+    // Check if instance is satisfiable
+    let inst = Instance::new(num_cons, num_vars, num_inputs, &A, &B, &C).unwrap();
+    let res = inst.is_sat(&assignment_vars, &assignment_inputs);
+    assert!(res.unwrap(), "should be satisfied");
 
-  //     // Testudo public params
-  //     let gens = TestudoGens::<E>::new(
-  //       num_cons,
-  //       num_vars,
-  //       num_inputs,
-  //       num_non_zero_entries,
-  //       poseidon_params(),
-  //     );
+    // Testudo public params
+    let gens = TestudoGens::<E>::new(
+      num_cons,
+      num_vars,
+      num_inputs,
+      num_non_zero_entries,
+      poseidon_params(),
+    );
 
-  //     // create a commitment to the R1CS instance
-  //     let (comm, decomm) = TestudoSnark::encode(&inst, &gens);
+    // create a commitment to the R1CS instance
+    let (comm, decomm) = TestudoSnark::encode(&inst, &gens);
 
-  //     let params = poseidon_params();
+    let params = poseidon_params();
 
-  //     // produce a TestudoSnark
-  //     let mut prover_transcript = PoseidonTranscript::new(&params);
-  //     let proof = TestudoSnark::prove(
-  //       &inst,
-  //       &comm,
-  //       &decomm,
-  //       assignment_vars.clone(),
-  //       &assignment_inputs,
-  //       &gens,
-  //       &mut prover_transcript,
-  //       poseidon_params(),
-  //     )
-  //     .unwrap();
+    // produce a TestudoSnark
+    let mut prover_transcript = PoseidonTranscript::new(&params);
+    let proof = TestudoSnark::prove(
+      &inst,
+      &comm,
+      &decomm,
+      assignment_vars.clone(),
+      &assignment_inputs,
+      &gens,
+      &mut prover_transcript,
+      poseidon_params(),
+    )
+    .unwrap();
 
-  //     // verify the TestudoSnark
-  //     let mut verifier_transcript = PoseidonTranscript::new(&params);
-  //     assert!(proof
-  //       .verify(
-  //         &gens,
-  //         &comm,
-  //         &assignment_inputs,
-  //         &mut verifier_transcript,
-  //         poseidon_params()
-  //       )
-  //       .is_ok());
-  //   }
-  // }
+    // verify the TestudoSnark
+    let mut verifier_transcript = PoseidonTranscript::new(&params);
+    assert!(proof
+      .verify(
+        &gens,
+        &comm,
+        &assignment_inputs,
+        &mut verifier_transcript,
+        poseidon_params()
+      )
+      .is_ok());
+  }
 }
