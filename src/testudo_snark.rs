@@ -173,7 +173,7 @@ where
     timer_eval_proof.stop();
 
     transcript.new_from_state(&c);
-    let timer_sat_circuit_verification = Timer::new("r1cs_sat_circuit_verification");
+    let timer_sat_circuit_verification = Timer::new("r1cs_sat_circuit_verification_proof");
     let r1cs_verifier_proof = r1cs_sat_proof
       .prove_verifier(
         inst.inst.get_num_vars(),

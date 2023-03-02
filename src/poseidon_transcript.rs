@@ -103,6 +103,28 @@ mod test {
   use ark_bls12_381::Fr;
   use ark_ff::PrimeField;
   use poseidon_paramgen;
+
+  use super::*;
+  use crate::ark_std::UniformRand;
+  use crate::parameters::PoseidonConfiguration;
+
+  #[test]
+  fn poseidon_compatibility() {
+    let mut f1 = PoseidonTranscript::new(&ark_bls12_381::Fr::poseidon_params());
+    let mut f2 = PoseidonTranscript::new(&ark_blst::Scalar::poseidon_params());
+
+    let r1 = ark_bls12_381::Fr::rand(&mut rand::thread_rng());
+    let r2 = ark_blst::Scalar::from(r1);
+
+    f1.append_scalar(b"", &r1);
+    f2.append_scalar(b"", &r2);
+
+    let c1: ark_bls12_381::Fr = f1.challenge_scalar(b"");
+    let c2: ark_blst::Scalar = f2.challenge_scalar(b"");
+
+    let c22 = ark_blst::Scalar::from(c1);
+    assert!(c2 == c22);
+  }
   #[test]
   fn poseidon_parameters_generation() {
     print_modulus::<Fr>();

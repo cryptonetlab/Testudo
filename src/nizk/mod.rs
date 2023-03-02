@@ -14,7 +14,7 @@ use std::ops::Mul;
 mod bullet;
 use bullet::BulletReductionProof;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, CanonicalSerialize, CanonicalDeserialize)]
 pub struct DotProductProofGens<G: CurveGroup> {
   n: usize,
   pub gens_n: MultiCommitGens<G>,
@@ -168,7 +168,6 @@ where
 
     let lhs = (Gamma_hat.mul(c_s) + beta_s).mul(a_hat_s) + delta_s;
     let rhs = (g_hat + gens.gens_1.G[0].mul(a_hat_s)).mul(z1_s) + gens.gens_1.h.mul(z2_s);
-
     assert_eq!(lhs, rhs);
 
     if lhs == rhs {
@@ -182,29 +181,40 @@ where
 #[cfg(test)]
 mod tests {
 
-  use crate::parameters::poseidon_params;
+  use crate::parameters::PoseidonConfiguration;
 
   use super::*;
+  use ark_ec::CurveGroup;
   use ark_std::UniformRand;
-  type F = ark_bls12_377::Fr;
-  type G = ark_bls12_377::G1Projective;
 
   #[test]
-  fn check_dotproductproof_log() {
+  fn check_dotproductproof_log_blst() {
+    check_dotproductproof_log::<ark_bls12_381::G1Projective>();
+  }
+
+  #[test]
+  fn check_dotproductproof_log_arkworks_bls12_381() {
+    check_dotproductproof_log::<ark_bls12_381::G1Projective>();
+  }
+
+  fn check_dotproductproof_log<G: CurveGroup>()
+  where
+    G::ScalarField: PoseidonConfiguration + Absorb,
+  {
     let mut rng = ark_std::rand::thread_rng();
 
     let n = 1024;
 
     let gens = DotProductProofGens::<G>::new(n, b"test-1024");
 
-    let x: Vec<F> = (0..n).map(|_i| F::rand(&mut rng)).collect();
-    let a: Vec<F> = (0..n).map(|_i| F::rand(&mut rng)).collect();
+    let x: Vec<G::ScalarField> = (0..n).map(|_i| G::ScalarField::rand(&mut rng)).collect();
+    let a: Vec<G::ScalarField> = (0..n).map(|_i| G::ScalarField::rand(&mut rng)).collect();
     let y = crate::dot_product(&x, &a);
 
-    let r_x = F::rand(&mut rng);
-    let r_y = F::rand(&mut rng);
+    let r_x = G::ScalarField::rand(&mut rng);
+    let r_y = G::ScalarField::rand(&mut rng);
 
-    let params = poseidon_params();
+    let params = G::ScalarField::poseidon_params();
     let mut prover_transcript = PoseidonTranscript::new(&params);
     let (proof, Cx, Cy) =
       DotProductProofLog::<G>::prove(&gens, &mut prover_transcript, &x, &r_x, &a, &y, &r_y);

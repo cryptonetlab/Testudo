@@ -2,11 +2,13 @@ use crate::ark_std::UniformRand;
 use crate::parameters::*;
 use ark_crypto_primitives::sponge::poseidon::PoseidonSponge;
 use ark_crypto_primitives::sponge::CryptographicSponge;
+use ark_ec::AffineRepr;
 use ark_ec::{CurveGroup, VariableBaseMSM};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use rand::SeedableRng;
 use std::ops::Mul;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, CanonicalSerialize, CanonicalDeserialize, Clone)]
 pub struct MultiCommitGens<G: CurveGroup> {
   pub n: usize,
   pub G: Vec<G::Affine>,
@@ -29,6 +31,7 @@ impl<G: CurveGroup> MultiCommitGens<G> {
         let mut prng = rand::rngs::StdRng::from_seed(uniform_bytes);
         G::Affine::rand(&mut prng)
       })
+      .inspect(|e| assert!(!e.is_zero(), "multicommitgen zero element"))
       .collect::<Vec<_>>();
 
     MultiCommitGens {
@@ -82,6 +85,6 @@ impl PedersenCommit {
     gens_n: &MultiCommitGens<G>,
   ) -> G {
     assert_eq!(scalars.len(), gens_n.n);
-    <G as VariableBaseMSM>::msm_unchecked(&gens_n.G, scalars) + gens_n.h.mul(blind)
+    <G as VariableBaseMSM>::msm_unchecked(&gens_n.G, scalars) //+ gens_n.h.mul(blind)
   }
 }

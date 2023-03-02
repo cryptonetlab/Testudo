@@ -25,9 +25,9 @@ struct BenchmarkResults {
 }
 
 fn main() {
-  bench_with_bls12_377();
+  // bench_with_bls12_377();
   // bench_with_bls12_381();
-  // bench_with_ark_blst();
+  bench_with_ark_blst();
 }
 
 fn bench_with_ark_blst() {

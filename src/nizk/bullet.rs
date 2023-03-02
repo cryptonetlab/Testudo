@@ -236,7 +236,6 @@ impl<G: CurveGroup> BulletReductionProof<G> {
 
     let G_hat = G::msm(Gs, s.as_slice()).map_err(|_| ProofVerifyError::InternalError)?;
     let a_hat = inner_product(a, &s);
-
     let Gamma_hat = G::msm(
       &G::normalize_batch(
         &Ls

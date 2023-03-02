@@ -26,6 +26,7 @@ pub struct R1CSInstance<F: PrimeField> {
   C: SparseMatPolynomial<F>,
 }
 
+#[derive(CanonicalDeserialize, CanonicalSerialize, Debug)]
 pub struct R1CSCommitmentGens<E: Pairing> {
   gens: SparseMatPolyCommitmentGens<E>,
 }

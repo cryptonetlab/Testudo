@@ -283,6 +283,7 @@ pub struct MultiSparseMatPolynomialAsDense<F: PrimeField> {
   comb_mem: DensePolynomial<F>,
 }
 
+#[derive(CanonicalSerialize, CanonicalDeserialize, Debug)]
 pub struct SparseMatPolyCommitmentGens<E: Pairing> {
   gens_ops: PolyCommitmentGens<E>,
   gens_mem: PolyCommitmentGens<E>,

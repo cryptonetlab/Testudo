@@ -49,6 +49,7 @@ use r1csinstance::{R1CSCommitment, R1CSDecommitment, R1CSInstance};
 use ark_ec::CurveGroup;
 
 /// `ComputationCommitment` holds a public preprocessed NP statement (e.g., R1CS)
+#[derive(Debug)]
 pub struct ComputationCommitment<G: CurveGroup> {
   comm: R1CSCommitment<G>,
 }
@@ -296,6 +297,8 @@ mod tests {
 
   type F = ark_bls12_377::Fr;
 
+  type E = ark_bls12_377::Bls12_377;
+  type F = ark_bls12_377::Fr;
   #[test]
   pub fn check_r1cs_invalid_index() {
     let num_cons = 4;
