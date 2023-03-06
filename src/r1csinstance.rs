@@ -314,6 +314,9 @@ impl<F: PrimeField> R1CSInstance<F> {
     &self,
     gens: &R1CSCommitmentGens<E>,
   ) -> (R1CSCommitment<E::G1>, R1CSDecommitment<F>) {
+    // Noting that matrices A, B and C are sparse, produces a combined dense
+    // dense polynomial from the non-zero entry that we commit to. This
+    // represents the computational commitment.
     let (comm, dense) = SparseMatPolynomial::multi_commit(&[&self.A, &self.B, &self.C], &gens.gens);
     let r1cs_comm = R1CSCommitment {
       num_cons: self.num_cons,
@@ -322,6 +325,8 @@ impl<F: PrimeField> R1CSInstance<F> {
       comm,
     };
 
+    // The decommitment is used by the prover to convince the verifier
+    // the received openings of A, B and C are correct.
     let r1cs_decomm = R1CSDecommitment { dense };
 
     (r1cs_comm, r1cs_decomm)

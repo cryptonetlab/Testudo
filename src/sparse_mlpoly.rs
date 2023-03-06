@@ -20,6 +20,8 @@ use ark_serialize::*;
 use core::cmp::Ordering;
 
 #[derive(Debug, CanonicalSerialize, CanonicalDeserialize, Clone)]
+// Each SparseMatEntry is a tuple (row, col, val) representing a non-zero value
+// in an R1CS  matrix.
 pub struct SparseMatEntry<F: PrimeField> {
   row: usize,
   col: usize,
@@ -33,9 +35,11 @@ impl<F: PrimeField> SparseMatEntry<F> {
 }
 
 #[derive(Debug, CanonicalSerialize, CanonicalDeserialize, Clone)]
+// The sparse multilinearrepresentation of an R1CS matrix of size x*y
 pub struct SparseMatPolynomial<F: PrimeField> {
   num_vars_x: usize,
   num_vars_y: usize,
+  // The non-zero entries in the matrix, represented by the tuple (row, col,val)
   M: Vec<SparseMatEntry<F>>,
 }
 
@@ -346,6 +350,7 @@ impl<F: PrimeField> SparseMatPolynomial<F> {
     }
   }
 
+  // get the number of non_zero entries in a sparse R1CS matrix
   pub fn get_num_nz_entries(&self) -> usize {
     self.M.len().next_power_of_two()
   }
@@ -364,6 +369,7 @@ impl<F: PrimeField> SparseMatPolynomial<F> {
     (ops_row, ops_col, val)
   }
 
+  // Produce the dense representation of sparse matrices A, B and C.
   fn multi_sparse_to_dense_rep(
     sparse_polys: &[&SparseMatPolynomial<F>],
   ) -> MultiSparseMatPolynomialAsDense<F> {
@@ -384,10 +390,16 @@ impl<F: PrimeField> SparseMatPolynomial<F> {
     let mut val_vec: Vec<DensePolynomial<F>> = Vec::new();
     for poly in sparse_polys {
       let (ops_row, ops_col, val) = poly.sparse_to_dense_vecs(N);
+      // aggregate all the row and columns that contain non-zero values in the
+      // three matrices
       ops_row_vec.push(ops_row);
       ops_col_vec.push(ops_col);
+      // create dense polynomials, in Lagrange representation, for the non-zero
+      // values of each matrix
       val_vec.push(DensePolynomial::new(val));
     }
+
+    // Note: everything else from
 
     let any_poly = &sparse_polys[0];
 
@@ -401,6 +413,7 @@ impl<F: PrimeField> SparseMatPolynomial<F> {
     let col = AddrTimestamps::new(num_mem_cells, N, ops_col_vec);
 
     // combine polynomials into a single polynomial for commitment purposes
+    // this is done because the commitment used has a public setup
     let comb_ops = DensePolynomial::merge(
       row
         .ops_addr
