@@ -70,7 +70,7 @@ harness = false
 [features]
 multicore = ["rayon"]
 profile = []
-default = ["asm","parallel", "std", "multicore"]
+default = ["asm", "std"]
 asm = ["ark-ff/asm"]
 parallel = [ "std", "ark-ff/parallel", "ark-std/parallel", "ark-ec/parallel", "ark-poly/parallel", "rayon"]
 std = ["ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "ark-serialize/std"]
