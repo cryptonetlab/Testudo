@@ -1,14 +1,14 @@
 use std::time::Instant;
 
+use ark_bls12_377::Bls12_377;
+use ark_ec::pairing::Pairing;
 use ark_poly_commit::multilinear_pc::MultilinearPC;
 use ark_serialize::CanonicalSerialize;
+use ark_std::UniformRand;
 use libtestudo::{
   parameters::PoseidonConfiguration, poseidon_transcript::PoseidonTranscript, sqrt_pst::Polynomial,
 };
 use serde::Serialize;
-type F = ark_bls12_377::Fr;
-type E = ark_bls12_377::Bls12_377;
-use ark_std::UniformRand;
 
 #[derive(Default, Clone, Serialize)]
 struct BenchmarkResults {
@@ -18,22 +18,37 @@ struct BenchmarkResults {
   verification_time: u128,
   proof_size: usize,
   commiter_key_size: usize,
+  pst_commit: u128,
+  pst_opening: u128,
+  pst_verification: u128,
+  pst_proof_size: u128,
 }
 fn main() {
-  let params = ark_bls12_377::Fr::poseidon_params();
+  testudo_commitment_benchmark::<Bls12_377>("testudo_commitment_bls12377.csv");
+  testudo_commitment_benchmark::<ark_blst::Bls12>("testudo_commitment_bls12381.csv");
+}
 
-  let mut writer = csv::Writer::from_path("sqrt_pst.csv").expect("unable to open csv writer");
-  for &s in [4, 5, 20, 27].iter() {
+fn testudo_commitment_benchmark<E: Pairing>(fname: &str)
+where
+  E::ScalarField: PoseidonConfiguration,
+{
+  let params = E::ScalarField::poseidon_params();
+  let mut writer = csv::Writer::from_path(fname).expect("unable to open csv writer");
+  for &s in [4, 5, 15, 20, 25].iter() {
     println!("Running for {} inputs", s);
     let mut rng = ark_std::test_rng();
     let mut br = BenchmarkResults::default();
     br.power = s;
     let num_vars = s;
     let len = 2_usize.pow(num_vars as u32);
-    let z: Vec<F> = (0..len).into_iter().map(|_| F::rand(&mut rng)).collect();
-    let r: Vec<F> = (0..num_vars)
+    bench_pst::<E>(num_vars, &mut br);
+    let z: Vec<E::ScalarField> = (0..len)
       .into_iter()
-      .map(|_| F::rand(&mut rng))
+      .map(|_| E::ScalarField::rand(&mut rng))
+      .collect();
+    let r: Vec<E::ScalarField> = (0..num_vars)
+      .into_iter()
+      .map(|_| E::ScalarField::rand(&mut rng))
       .collect();
 
     let setup_vars = (num_vars as f32 / 2.0).ceil() as usize;
@@ -95,4 +110,34 @@ fn main() {
       .expect("unable to write results to csv");
     writer.flush().expect("wasn't able to flush");
   }
+}
+
+fn bench_pst<E: Pairing>(num_vars: usize, res: &mut BenchmarkResults) {
+  use ark_poly::{DenseMultilinearExtension, MultilinearExtension};
+  use ark_poly_commit::multilinear_pc::MultilinearPC;
+  let params = MultilinearPC::<E>::setup(num_vars, &mut rand::thread_rng());
+  let (comkey, vkey) = MultilinearPC::trim(&params, num_vars);
+  let poly = DenseMultilinearExtension::rand(num_vars, &mut rand::thread_rng());
+
+  let start = Instant::now();
+  let comm = MultilinearPC::commit(&comkey, &poly);
+  res.pst_commit = start.elapsed().as_millis();
+
+  let xs = (0..num_vars)
+    .map(|_| E::ScalarField::rand(&mut rand::thread_rng()))
+    .collect::<Vec<_>>();
+  let y = poly.evaluate(&xs).unwrap();
+  let start = Instant::now();
+  let proof = MultilinearPC::open(&comkey, &poly, &xs);
+  res.pst_opening = start.elapsed().as_millis();
+
+  let start = Instant::now();
+  let check = MultilinearPC::check(&vkey, &comm, &xs, y, &proof);
+  res.pst_verification = start.elapsed().as_millis();
+
+  let mut b = Vec::new();
+  proof.serialize_compressed(&mut b).unwrap();
+  res.pst_proof_size = b.len() as u128;
+
+  assert!(check);
 }

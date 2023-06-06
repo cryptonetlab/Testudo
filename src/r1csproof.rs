@@ -569,26 +569,27 @@ mod tests {
   #[test]
   fn check_r1cs_proof_ark_blst() {
     let params = ark_blst::Scalar::poseidon_params();
-    check_r1cs_proof::<ark_blst::Bls12>(params);
+    check_r1cs_proof::<ark_blst::Bls12>(10, params);
   }
   #[test]
   fn check_r1cs_proof_bls12_377() {
     let params = ark_bls12_377::Fr::poseidon_params();
-    check_r1cs_proof::<ark_bls12_377::Bls12_377>(params);
+    check_r1cs_proof::<ark_bls12_377::Bls12_377>(10, params);
   }
 
   #[test]
   fn check_r1cs_proof_bls12_381() {
     let params = ark_bls12_381::Fr::poseidon_params();
-    check_r1cs_proof::<ark_bls12_381::Bls12_381>(params);
+    check_r1cs_proof::<ark_bls12_381::Bls12_381>(10, params);
   }
-  fn check_r1cs_proof<P>(params: PoseidonConfig<P::ScalarField>)
+  fn check_r1cs_proof<P>(size: usize, params: PoseidonConfig<P::ScalarField>)
   where
     P: Pairing,
     P::ScalarField: PrimeField,
     P::ScalarField: Absorb,
   {
-    let num_vars = 1024;
+
+    let num_vars = (2_usize).pow(size as u32);
     let num_cons = num_vars;
     let num_inputs = 3;
     let (inst, vars, input) =

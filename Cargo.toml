@@ -64,7 +64,11 @@ name = "testudo"
 harness = false
 
 [[bench]]
-name = "pst"
+name = "commitment"
+harness = false
+
+[[bench]]
+name = "groth16"
 harness = false
 
 [features]
