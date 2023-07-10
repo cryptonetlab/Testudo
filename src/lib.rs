@@ -17,7 +17,7 @@ extern crate json;
 extern crate rayon;
 
 mod commitments;
-mod dense_mlpoly;
+pub mod dense_mlpoly;
 mod errors;
 #[macro_use]
 pub(crate) mod macros;
@@ -25,20 +25,20 @@ mod math;
 pub(crate) mod mipp;
 mod nizk;
 mod product_tree;
-mod r1csinstance;
-mod r1csproof;
+pub mod r1csinstance;
+pub mod r1csproof;
 mod sparse_mlpoly;
 pub mod sqrt_pst;
-mod sumcheck;
+pub mod sumcheck;
 pub mod testudo_nizk;
 pub mod testudo_snark;
 mod timer;
-pub(crate) mod transcript;
+pub mod transcript;
 mod unipoly;
 
 pub mod parameters;
 
-mod constraints;
+pub mod constraints;
 pub mod poseidon_transcript;
 
 use core::cmp::max;

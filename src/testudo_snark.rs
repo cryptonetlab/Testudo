@@ -116,7 +116,7 @@ where
   // Returns the Testudo SNARK proof which has two components:
   // * proof that the R1CS instance is satisfiable
   // * proof that the evlauation of matrices A, B and C on point (x,y)
-  // resulted from the two rounda of sumcheck are correct
+  // resulted from the two rounds of sumcheck are correct
   pub fn prove(
     inst: &Instance<E::ScalarField>,
     comm: &ComputationCommitment<E::G1>,
