@@ -21,7 +21,7 @@ use ark_r1cs_std::{
 };
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef, Namespace, SynthesisError};
 
-pub struct PoseidonTranscripVar<F>
+pub struct PoseidonTranscriptVar<F>
 where
   F: PrimeField,
 {
@@ -29,11 +29,11 @@ where
   pub sponge: PoseidonSpongeVar<F>,
 }
 
-impl<F> PoseidonTranscripVar<F>
+impl<F> PoseidonTranscriptVar<F>
 where
   F: PrimeField,
 {
-  fn new(cs: ConstraintSystemRef<F>, params: &PoseidonConfig<F>, c_var: FpVar<F>) -> Self {
+  pub fn new(cs: ConstraintSystemRef<F>, params: &PoseidonConfig<F>, c_var: FpVar<F>) -> Self {
     let mut sponge = PoseidonSpongeVar::new(cs.clone(), params);
 
     sponge.absorb(&c_var).unwrap();
@@ -120,16 +120,15 @@ pub struct SumcheckVerificationCircuit<F: PrimeField> {
 }
 
 impl<F: PrimeField> SumcheckVerificationCircuit<F> {
-  fn verifiy_sumcheck(
-    &self,
+  pub fn verify_sumcheck(
     poly_vars: &[UniPolyVar<F>],
     claim_var: &FpVar<F>,
-    transcript_var: &mut PoseidonTranscripVar<F>,
+    transcript_var: &mut PoseidonTranscriptVar<F>,
   ) -> Result<(FpVar<F>, Vec<FpVar<F>>), SynthesisError> {
     let mut e_var = claim_var.clone();
     let mut r_vars: Vec<FpVar<F>> = Vec::new();
 
-    for (poly_var, _poly) in poly_vars.iter().zip(self.polys.iter()) {
+    for poly_var in poly_vars.iter() {
       let res = poly_var.eval_at_one() + poly_var.eval_at_zero();
       res.enforce_equal(&e_var)?;
       transcript_var.append_vector(&poly_var.coeffs)?;
@@ -264,7 +263,7 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for R1CSVerificationCircuit<F> {
   fn generate_constraints(self, cs: ConstraintSystemRef<F>) -> ark_relations::r1cs::Result<()> {
     let initial_challenge_var = FpVar::<F>::new_input(cs.clone(), || Ok(self.prev_challenge))?;
     let mut transcript_var =
-      PoseidonTranscripVar::new(cs.clone(), &self.params, initial_challenge_var);
+      PoseidonTranscriptVar::new(cs.clone(), &self.params, initial_challenge_var);
 
     let poly_sc1_vars = self
       .sc_phase1
@@ -307,10 +306,11 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for R1CSVerificationCircuit<F> {
 
     let claim_phase1_var = FpVar::<F>::new_witness(cs.clone(), || Ok(F::zero()))?;
 
-    let (claim_post_phase1_var, rx_var) =
-      self
-        .sc_phase1
-        .verifiy_sumcheck(&poly_sc1_vars, &claim_phase1_var, &mut transcript_var)?;
+    let (claim_post_phase1_var, rx_var) = SumcheckVerificationCircuit::<F>::verify_sumcheck(
+      &poly_sc1_vars,
+      &claim_phase1_var,
+      &mut transcript_var,
+    )?;
 
     // The prover sends (rx, ry) to the verifier for the evaluation proof so
     // the constraints need to ensure it is indeed the result from the first
@@ -347,10 +347,11 @@ impl<F: PrimeField> ConstraintSynthesizer<F> for R1CSVerificationCircuit<F> {
     let claim_phase2_var =
       &r_A_var * &Az_claim_var + &r_B_var * &Bz_claim_var + &r_C_var * &Cz_claim_var;
 
-    let (claim_post_phase2_var, ry_var) =
-      self
-        .sc_phase2
-        .verifiy_sumcheck(&poly_sc2_vars, &claim_phase2_var, &mut transcript_var)?;
+    let (claim_post_phase2_var, ry_var) = SumcheckVerificationCircuit::<F>::verify_sumcheck(
+      &poly_sc2_vars,
+      &claim_phase2_var,
+      &mut transcript_var,
+    )?;
 
     //  Because the verifier checks the commitment opening on point ry outside
     //  the circuit, the prover needs to send ry to the verifier (making the

@@ -607,7 +607,7 @@ mod tests {
     let inst_evals = inst.evaluate(&rx, &ry);
 
     prover_transcript.new_from_state(&c);
-    let verifer_proof = proof
+    let verifier_proof = proof
       .prove_verifier(
         num_vars,
         num_cons,
@@ -620,7 +620,7 @@ mod tests {
       .unwrap();
 
     let mut verifier_transcript = PoseidonTranscript::new(&params.clone());
-    assert!(verifer_proof
+    assert!(verifier_proof
       .verify(
         (rx, ry),
         &input,
