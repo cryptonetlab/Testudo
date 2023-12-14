@@ -10,8 +10,8 @@ use ark_serialize::Compress;
 #[derive(Clone)]
 /// TODO
 pub struct PoseidonTranscript<F: PrimeField> {
-  sponge: PoseidonSponge<F>,
-  params: PoseidonConfig<F>,
+  pub sponge: PoseidonSponge<F>,
+  pub params: PoseidonConfig<F>,
 }
 
 impl<F: PrimeField> Transcript for PoseidonTranscript<F> {
@@ -22,7 +22,7 @@ impl<F: PrimeField> Transcript for PoseidonTranscript<F> {
   fn append<S: CanonicalSerialize>(&mut self, _label: &'static [u8], point: &S) {
     let mut buf = Vec::new();
     point
-      .serialize_with_mode(&mut buf, Compress::Yes)
+      .serialize_with_mode(&mut buf, Compress::No)
       .expect("serialization failed");
     self.sponge.absorb(&buf);
   }
@@ -49,6 +49,7 @@ impl<F: PrimeField + Absorb> PoseidonTranscript<F> {
     self.append_scalar(b"", challenge);
   }
 }
+
 
 impl<F: PrimeField> PoseidonTranscript<F> {
   pub fn append_u64(&mut self, _label: &'static [u8], x: u64) {

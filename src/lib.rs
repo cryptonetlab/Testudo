@@ -21,9 +21,13 @@ mod dense_mlpoly;
 mod errors;
 #[macro_use]
 pub(crate) mod macros;
+pub mod circuit_verifier;
+mod constraints;
 mod math;
 pub(crate) mod mipp;
 mod nizk;
+pub mod parameters;
+pub mod poseidon_transcript;
 mod product_tree;
 mod r1csinstance;
 mod r1csproof;
@@ -35,12 +39,7 @@ pub mod testudo_snark;
 mod timer;
 pub(crate) mod transcript;
 mod unipoly;
-
-pub mod parameters;
-
-mod constraints;
-pub mod poseidon_transcript;
-
+mod verifier_circuit;
 use core::cmp::max;
 use errors::R1CSError;
 

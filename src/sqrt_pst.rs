@@ -167,7 +167,7 @@ impl<E: Pairing> Polynomial<E> {
 
   pub fn open(
     &mut self,
-    transcript: &mut PoseidonTranscript<E::ScalarField>,
+    transcript: &mut PoseidonTranscript<E::BaseField>,
     comm_list: Vec<Commitment<E>>,
     ck: &CommitterKey<E>,
     point: &[E::ScalarField],
@@ -230,7 +230,7 @@ impl<E: Pairing> Polynomial<E> {
   }
 
   pub fn verify(
-    transcript: &mut PoseidonTranscript<E::ScalarField>,
+    transcript: &mut PoseidonTranscript<E::BaseField>,
     vk: &VerifierKey<E>,
     U: &Commitment<E>,
     point: &[E::ScalarField],
@@ -267,7 +267,7 @@ impl<E: Pairing> Polynomial<E> {
 #[cfg(test)]
 mod tests {
 
-  use crate::parameters::poseidon_params;
+  use crate::parameters::{get_bls12377_fq_params};
 
   use super::*;
   type F = ark_bls12_377::Fr;
@@ -321,7 +321,7 @@ mod tests {
 
     let (comm_list, t) = pl.commit(&ck);
 
-    let params = poseidon_params();
+    let params = get_bls12377_fq_params();
     let mut prover_transcript = PoseidonTranscript::new(&params);
 
     let (u, pst_proof, mipp_proof) = pl.open(&mut prover_transcript, comm_list, &ck, &r, &t);

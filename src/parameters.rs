@@ -1,5 +1,14 @@
+use crate::ark_std::One;
+use ark_bls12_377::Fq;
 use ark_bls12_377::Fr;
 use ark_crypto_primitives::sponge::poseidon::PoseidonConfig;
+use ark_ec::pairing::Pairing;
+use ark_ff::BigInt;
+use ark_ff::BigInteger;
+use ark_ff::BigInteger64;
+use ark_ff::PrimeField;
+use poseidon_parameters::PoseidonParameters;
+use std::fmt::Debug;
 use std::str::FromStr;
 // Copyright: https://github.com/nikkolasg/ark-dkg/blob/main/src/parameters.rs
 use json::JsonValue;
@@ -159,6 +168,37 @@ pub fn poseidon_params() -> PoseidonConfig<Fr> {
     .map(|m| {
       m.members()
         .map(|v| Fr::from_str(v.as_str().unwrap()).unwrap())
+        .collect::<Vec<_>>()
+    })
+    .collect::<Vec<_>>();
+  PoseidonConfig::new(
+    FR["full_rounds"].as_usize().unwrap(),
+    FR["partial_rounds"].as_usize().unwrap(),
+    FR["alpha"].as_u64().unwrap(),
+    mds,
+    arks,
+    FR["rate"].as_usize().unwrap(),
+    // TODO (nikkolasg): check out the concrete parameters for the capacity
+    // so far taken from https://github.com/AleoHQ/snarkVM/blob/d6ce2d3540b9355b59ef580db998188c786f8599/fields/src/traits/poseidon_default.rs#L43
+    1,
+  )
+}
+
+pub fn get_bls12377_fq_params() -> PoseidonConfig<Fq> {
+  let arks = FR["ark"]
+    .members()
+    .map(|ark| {
+      ark
+        .members()
+        .map(|v| Fq::from_str(v.as_str().unwrap()).unwrap())
+        .collect::<Vec<_>>()
+    })
+    .collect::<Vec<_>>();
+  let mds = FR["mds"]
+    .members()
+    .map(|m| {
+      m.members()
+        .map(|v| Fq::from_str(v.as_str().unwrap()).unwrap())
         .collect::<Vec<_>>()
     })
     .collect::<Vec<_>>();

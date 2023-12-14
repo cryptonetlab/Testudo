@@ -29,7 +29,7 @@ pub struct MippProof<E: Pairing> {
 
 impl<E: Pairing> MippProof<E> {
   pub fn prove(
-    transcript: &mut PoseidonTranscript<E::ScalarField>,
+    transcript: &mut PoseidonTranscript<E::BaseField>,
     ck: &CommitterKey<E>,
     a: Vec<E::G1Affine>,
     y: Vec<E::ScalarField>,
@@ -129,6 +129,7 @@ impl<E: Pairing> MippProof<E> {
       xs_inv.len(),
       Self::polynomial_evaluations_from_transcript::<E::ScalarField>(&xs_inv),
     );
+
     let c = MultilinearPC::<E>::commit_g2(ck, &poly);
     debug_assert!(c.h_product == final_h);
 
@@ -179,7 +180,7 @@ impl<E: Pairing> MippProof<E> {
 
   pub fn verify(
     vk: &VerifierKey<E>,
-    transcript: &mut PoseidonTranscript<E::ScalarField>,
+    transcript: &mut PoseidonTranscript<E::BaseField>,
     proof: &MippProof<E>,
     point: Vec<E::ScalarField>,
     U: &E::G1Affine,
@@ -277,7 +278,6 @@ impl<E: Pairing> MippProof<E> {
       let r = transcript.challenge_scalar::<E::ScalarField>(b"random_point");
       rs.push(r);
     }
-
     // Given p_h is structured as defined above, the verifier can compute
     // p_h(rs) by themselves in O(m) time
     let v = (0..m)
