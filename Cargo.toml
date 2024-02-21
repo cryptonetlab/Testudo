@@ -29,7 +29,7 @@ ark-crypto-primitives = {version = "0.4.0", features = ["sponge","r1cs","snark"]
 ark-r1cs-std = { version = "0.4.0", default-features = false }
 ark-relations = { version = "0.4.0", default-features = false, optional = true }
 ark-snark = { version = "0.4.0", default-features = false }
-ark-groth16 = { version = "0.3.0" }
+ark-groth16 = { version = "0.4.0" }
 ark-bw6-761 = { version = "0.4.0" }
 ark-poly-commit = { version = "0.4.0" }
 ark-poly = {version = "0.4.0"}
@@ -77,7 +77,6 @@ std = ["ark-ff/std", "ark-ec/std", "ark-std/std", "ark-relations/std", "ark-seri
 
 [patch.crates-io]
 ark-poly-commit = {git = "https://github.com/cryptonetlab/ark-polycommit", branch="feat/variable-crs"}
-ark-groth16 = { git = "https://github.com/arkworks-rs/groth16" }
 blstrs = { git = "https://github.com/nikkolasg/blstrs", branch = "feat/arkwork" }
 ark-ec = { git = "https://github.com/vmx/algebra", branch="affine-repr-xy-owned" }
 ark-ff = { git = "https://github.com/vmx/algebra", branch="affine-repr-xy-owned" }
